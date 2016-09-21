@@ -9,13 +9,9 @@
 
 var playerSymbol = "";
 var computerSymbol = "";
-var winner = false;
+var winner = false;     // QUESTION: does this need to be global? is this the right thing to do?
 
-var board = [
-    null, null, null,
-    null, null, null,
-    null, null, null
-];
+var board = [];
 
 var availableCells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 // board positions match the array positions:
@@ -50,100 +46,101 @@ function setComputerSymbol(playerSymbol) {
     }
 }
 
-function randomAvailableCell(availableCells) {
+function getRandomAvailableCell(availableCells) {
     return availableCells[Math.floor(Math.random() * availableCells.length)];
 }
 
 function computerTurn(availableCells, board) {
+    // TODO: enter a short delay to mimick some computer thinking before computer chooses a square
+    console.log('board before: ' + board);
+    console.log('availableCells before splice: ' + availableCells);
+
     // choose a random available cell
-    var cellChoice = randomAvailableCell(availableCells);
+    var cellChoice = getRandomAvailableCell(availableCells);
     // update board with cellChoice
     board[cellChoice] = computerSymbol;
+    $("#"+cellChoice).html(computerSymbol);
+
     // update availableCells array
     availableCells.splice( availableCells.indexOf(cellChoice), 1);
+
+
+    console.log('board after: ' + board);
+    console.log('availableCells after splice: ' + availableCells);
+    console.log( checkWinner(board, computerSymbol, playerSymbol) );
 }
 
-function playerTurn() {
-    // do some stuff, click handlers and shit
-    //  if it is the users turn, wait for user to click on a square to choose, and the square is updated with the player piece
-}
 
-function checkWinner(board, computerSymbol, playerSymbol) {  // QUESTION: if the args here are globals, do we still need to pass them in, or can we just leave them out?
+function checkWinner(board, computerSymbol, playerSymbol) {  // QUESTION: if the args here are globals, do we still need to pass them in, or can we just leave them out? Think the Functional style would say to pass them in so that the function stays pure?
     for (var i = 0; i < winningPlays.length; i++) {
         if ( board[ winningPlays[i][0] ] === computerSymbol &&
              board[ winningPlays[i][1] ] === computerSymbol &&
              board[ winningPlays[i][2] ] === computerSymbol ) {
-                 winner = true;
-                 return 'Computer Wins... you moron!';
-                 //resetGame somehow
-        }
-        if
-        ( board[ winningPlays[i][0] ] === playerSymbol &&
-             board[ winningPlays[i][1] ] === playerSymbol &&
-             board[ winningPlays[i][2] ] === playerSymbol ) {
-                 winner = true;        // QUESTION: Is there a better way to do the winner and break out of the loop?
-                 return 'Player wins!';
-                 //resetGame somehow
+                 winner = 'Computer';
+                 $(".feedback").html('Computer Wins... you moron!');
+        } else if ( board[ winningPlays[i][0] ] === playerSymbol &&
+                    board[ winningPlays[i][1] ] === playerSymbol &&
+                    board[ winningPlays[i][2] ] === playerSymbol ) {
+                 winner = 'Player';        // QUESTION: Is there a better way to do the winner and break out of the loop?
+                 $(".feedback").html('You win, you beat a computer that has zero artificial intelligence; you should be proud!');
+        } else if (availableCells.length === 0 && !winner) {
+        // TODO: Extract to an isTie function?
+        $(".feedback").html("It's a tie, pathetic!"); //TODO: extract to a renderResult function.
         }
     }
+}
+
+function resetBoard() {
+    playerSymbol = "";
+    computerSymbol = "";
+    winner = false;
+    board = [];
+    availableCells = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    $(".cell").html("");
+    $(".feedback").html("");
 }
 
 
 $('document').ready(function(){
 
-    // Wait for player to click Launch Game button
+    // Wait for player to click Launch Game button, then set the X and O
     $('#launch').click(function() {
+        if (playerSymbol === "") {
+            playerSymbol = askPlayerToChooseXorO();
+            console.log('Player chooses: ' + playerSymbol);
+            computerSymbol = setComputerSymbol(playerSymbol);
+            console.log('Computer Symbol: ' + computerSymbol);
 
-        playerSymbol = askPlayerToChooseXorO();
-        console.log('Player chooses: ' + playerSymbol);
-        computerSymbol = setComputerSymbol(playerSymbol);
-        console.log('Computer Symbol: ' + computerSymbol);
-
-        while (!winner) { // while no winner and board not full
-            // computer goes first, chooses an available square (at random... later with AI?) and square is updated with piece
-            console.log('board before: ' + board);
-            console.log('availableCells before splice: ' + availableCells);
-            computerTurn(availableCells, board);
-            //playerTurn();
-            console.log( checkWinner(board, computerSymbol, playerSymbol) );
-            console.log('board after: ' + board);
-            console.log('availableCells after splice: ' + availableCells);
-
-            if (availableCells.length === 0) {  // extract to an isTie function?
-                console.log("It's a tie, tough luck");
-                // resetGame somehow
-            }
+            // This permits computer to start the game. Omit this to allow user to start first.
+            computerTurn(availableCells, board, computerSymbol);
         }
     });
+
+    // Wait for a player click, then run one iteration of the game
+    $(".cell").click(function() {
+        if (!winner && playerSymbol !== "") {
+            // TODO: Extract player bit to it's own playerTurn function
+            var cellChoice = parseInt($(this).attr('id'));
+            if ( availableCells.includes(cellChoice) ){
+                $(this).html(playerSymbol);
+                // update board with player cellChoice
+                board[cellChoice] = playerSymbol;
+                // update availableCells array
+                availableCells.splice( availableCells.indexOf(cellChoice), 1);
+                checkWinner(board, computerSymbol, playerSymbol);
+                computerTurn(availableCells, board);
+            }
+
+        }
+    });
+
+    // Reset Game
+    $("#reset").click(resetBoard);
+
 });  // end document ready
 
 
-
-//
-// if (there is a winner) {
-//     declare the winner
-//     reset the game
-// } else {
-//     if board has no null
-//     declare a tie
-//     reset the game
-// }
-//
-//
-//
-// function checkWinner(board) {
-//     for (var i = 0; i < winningPlays.length; i++) {
-//         if ( board[winningPlay[i][0]] ) {
-//             winner is x
-//         }
-//     }
-//
-//
-//
-//
-//
-//
-//         if (winningPlay array has 3 o) {
-//             winner is o
-//         }
-// }
+// TODO: Add AI to the computer choice algorithm.
+// TODO: pretty it up!
+// TODO: Computer always goes first in this... maybe
+// TODO: "My game will reset as soon as it's over so I can play again." - if I reset the board, you won't see the final board positions? How do the others display this and reset? Maybe a pop up "Do you want to reset?"
